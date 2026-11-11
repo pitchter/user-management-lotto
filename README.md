@@ -6,6 +6,8 @@ reporting job and a hexagonal architecture.
 
 This is the implementation of **Part 1 — User Management API** of the
 [backend-challenge](https://github.com/pitchter/backend-challenge) coding test.
+**Part 2 — Lottery Search System** is a design exercise with no code, and its
+proposal is in [`docs/lottery-search-design.md`](docs/lottery-search-design.md).
 
 ---
 
@@ -18,6 +20,7 @@ This is the implementation of **Part 1 — User Management API** of the
 - [API reference](#api-reference)
 - [gRPC](#grpc)
 - [Testing](#testing)
+- [Part 2 — Lottery Search System](#part-2--lottery-search-system)
 - [Project layout](#project-layout)
 - [Further reading](#further-reading)
 
@@ -352,6 +355,29 @@ names, not module paths.
 
 ---
 
+## Part 2 — Lottery Search System
+
+The second part of the challenge asks for a design document only: search 10
+million lottery tickets by a 6-character wildcard pattern, and never offer the
+same ticket to two users at once. No code.
+
+[**docs/lottery-search-design.md**](docs/lottery-search-design.md) is that
+proposal. In short:
+
+- A 6-digit pattern is a partially specified integer, so matching is arithmetic
+  rather than search — no text index and no search engine are involved.
+- Query cost follows the number of **contiguous runs** the pattern covers,
+  `10^(w−t)`, not the number of matches. That makes `******` a single range scan
+  and `*****5` the genuine worst case at 100,000 runs — the reverse of the
+  intuitive ordering.
+- The binding requirement is allocation, not retrieval. `SELECT … FOR UPDATE
+  SKIP LOCKED` in PostgreSQL satisfies "never the same ticket twice" in one
+  statement that selects and reserves together.
+- Reservation expiry is enforced in the allocation query itself, so no
+  background job is load-bearing for inventory.
+
+---
+
 ## Further reading
 
 - [`docs/jwt-guide.md`](docs/jwt-guide.md) — how to generate a secret, obtain a
@@ -361,4 +387,6 @@ names, not module paths.
   requests and responses, success and failure
 - [`docs/design-decisions.md`](docs/design-decisions.md) — the assumptions and
   trade-offs behind the choices above
+- [`docs/lottery-search-design.md`](docs/lottery-search-design.md) — Part 2 of
+  the challenge: the Lottery Search System design proposal
 - [`api/openapi.yaml`](api/openapi.yaml) — the OpenAPI 3.1 contract
