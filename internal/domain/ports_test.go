@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 func TestIdentityCanManage(t *testing.T) {

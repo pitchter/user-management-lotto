@@ -7,8 +7,8 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"user-management-api/internal/adapter/crypto"
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/adapter/crypto"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // The lowest cost bcrypt accepts, used to keep the suite fast; the real

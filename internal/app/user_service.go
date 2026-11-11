@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"user-management-api/internal/domain"
-	"user-management-api/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/platform/logger"
 )
 
 // UserService holds every use case about users.

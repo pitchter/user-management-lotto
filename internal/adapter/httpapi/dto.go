@@ -8,8 +8,8 @@ package httpapi
 import (
 	"time"
 
-	"user-management-api/internal/app"
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/app"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // --- request ---

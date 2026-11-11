@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	userv1 "user-management-api/internal/adapter/grpcapi/pb/user/v1"
-	"user-management-api/internal/app"
-	"user-management-api/internal/domain"
+	userv1 "github.com/pitchter/7-solution/internal/adapter/grpcapi/pb/user/v1"
+	"github.com/pitchter/7-solution/internal/app"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // UserService is what this adapter needs from the application layer.

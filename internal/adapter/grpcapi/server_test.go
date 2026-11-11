@@ -14,12 +14,12 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	"user-management-api/internal/adapter/grpcapi"
-	userv1 "user-management-api/internal/adapter/grpcapi/pb/user/v1"
-	"user-management-api/internal/app"
-	"user-management-api/internal/domain"
-	"user-management-api/internal/platform/logger"
-	"user-management-api/internal/testsupport"
+	"github.com/pitchter/7-solution/internal/adapter/grpcapi"
+	userv1 "github.com/pitchter/7-solution/internal/adapter/grpcapi/pb/user/v1"
+	"github.com/pitchter/7-solution/internal/app"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/testsupport"
 )
 
 // harness starts a real gRPC server on an in-memory listener (bufconn) and

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"user-management-api/internal/platform/config"
+	"github.com/pitchter/7-solution/internal/platform/config"
 )
 
 // validConfig returns a configuration that passes every rule, so each test

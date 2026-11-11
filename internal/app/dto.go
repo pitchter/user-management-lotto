@@ -12,7 +12,7 @@ package app
 import (
 	"time"
 
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // RegisterInput is the data for self-service sign-up.

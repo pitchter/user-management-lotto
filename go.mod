@@ -1,4 +1,4 @@
-module user-management-api
+module github.com/pitchter/7-solution
 
 go 1.26.0
 

@@ -12,8 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 
-	"user-management-api/internal/domain"
-	"user-management-api/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/platform/logger"
 )
 
 // Error codes let a client tell cases apart without parsing prose: the

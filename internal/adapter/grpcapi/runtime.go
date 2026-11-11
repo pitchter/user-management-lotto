@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
-	userv1 "user-management-api/internal/adapter/grpcapi/pb/user/v1"
-	"user-management-api/internal/domain"
+	userv1 "github.com/pitchter/7-solution/internal/adapter/grpcapi/pb/user/v1"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // Config holds the gRPC server settings.

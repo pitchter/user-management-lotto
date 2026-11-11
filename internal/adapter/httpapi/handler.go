@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"user-management-api/internal/app"
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/app"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // UserService is what the HTTP layer needs from the application layer.

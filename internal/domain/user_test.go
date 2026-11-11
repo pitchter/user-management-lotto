@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 var testNow = time.Date(2026, 11, 11, 10, 30, 0, 0, time.UTC)

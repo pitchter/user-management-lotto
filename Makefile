@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # User Management API — developer tasks
 # ---------------------------------------------------------------------------
-MODULE      := user-management-api
+MODULE      := github.com/pitchter/7-solution
 BIN_DIR     := bin
 APP_BIN     := $(BIN_DIR)/api
 VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -112,10 +112,18 @@ secret: ## Generate a fresh JWT_SECRET
 rename-module: ## Change the module path before pushing to GitHub: make rename-module NEW=github.com/you/repo
 	@test -n "$(NEW)" || (echo "usage: make rename-module NEW=github.com/you/repo"; exit 1)
 	go mod edit -module $(NEW)
-	@grep -rl '$(MODULE)/' --include='*.go' --include='*.proto' --include='Makefile' . | xargs sed -i '' 's|$(MODULE)/|$(NEW)/|g'
+	@grep -rl '$(MODULE)/' --include='*.go' --include='*.proto' --include='Makefile' --include='.golangci.yml' . | xargs sed -i '' 's|$(MODULE)/|$(NEW)/|g'
 	@sed -i '' 's|^MODULE      := .*|MODULE      := $(NEW)|' Makefile
+	@# the goimports prefix and the compose/image names carry no trailing slash,
+	@# so the substitution above does not reach them; only the first is a module path.
+	@sed -i '' 's|^        - $(MODULE)$$|        - $(NEW)|' .golangci.yml
 	go mod tidy
-	@echo "module renamed to $(NEW) — run make test again to confirm"
+	@# The .pb.go files carry the go_package option inside the serialized
+	@# descriptor, as length-prefixed bytes that the substitution above cannot
+	@# reach, so the generated code has to be rebuilt from the .proto.
+	@command -v protoc >/dev/null 2>&1 && $(MAKE) --no-print-directory proto \
+		|| echo "WARNING: protoc not found — run 'make proto' before committing, or the generated descriptor keeps the old path"
+	@echo "module renamed to $(NEW) — run make check to confirm"
 
 .PHONY: clean
 clean: ## Remove build artifacts

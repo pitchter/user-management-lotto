@@ -8,9 +8,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"user-management-api/internal/domain"
-	"user-management-api/internal/platform/idgen"
-	"user-management-api/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/platform/idgen"
+	"github.com/pitchter/7-solution/internal/platform/logger"
 )
 
 // Keys the middleware uses to stash values in the gin.Context.

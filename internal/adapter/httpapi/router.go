@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 
-	"user-management-api/internal/domain"
-	"user-management-api/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/platform/logger"
 )
 
 // RouterConfig is what the router needs to assemble every route.

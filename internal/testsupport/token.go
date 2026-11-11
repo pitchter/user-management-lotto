@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // FakeTokenService stands in for real JWTs in use-case and handler tests.

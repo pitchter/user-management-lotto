@@ -3,7 +3,7 @@ package testsupport
 import (
 	"testing"
 
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // UserOption customises the user built by NewUser.

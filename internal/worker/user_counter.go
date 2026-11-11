@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"user-management-api/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/platform/logger"
 )
 
 // DefaultInterval is the period the challenge asks for.

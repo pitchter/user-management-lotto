@@ -10,8 +10,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"user-management-api/internal/domain"
-	"user-management-api/internal/platform/idgen"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/platform/idgen"
 )
 
 // SigningMethod is the only algorithm this system accepts.

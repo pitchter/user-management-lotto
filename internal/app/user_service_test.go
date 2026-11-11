@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"user-management-api/internal/app"
-	"user-management-api/internal/domain"
-	"user-management-api/internal/testsupport"
+	"github.com/pitchter/7-solution/internal/app"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/testsupport"
 )
 
 // fixture gathers what most tests need in one place.

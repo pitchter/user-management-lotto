@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"user-management-api/internal/domain"
-	"user-management-api/internal/platform/idgen"
-	"user-management-api/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/platform/idgen"
+	"github.com/pitchter/7-solution/internal/platform/logger"
 )
 
 // MetadataAuthorization is the metadata key carrying the token.

@@ -332,12 +332,23 @@ deploy/                      Dockerfile, docker-compose.yml
 
 ### Renaming the module
 
-The module path is `user-management-api`, which keeps the repository
-self-contained. Before pushing it under your own account:
+The module path is `github.com/pitchter/7-solution`, matching the repository.
+To move it under a different account:
 
 ```bash
-make rename-module NEW=github.com/your-name/user-management-api
+make rename-module NEW=github.com/your-name/your-repo
 ```
+
+That rewrites `go.mod`, every import, the `go_package` option in the `.proto`,
+the `depguard` rules and the `goimports` prefix in `.golangci.yml`, then runs
+`go mod tidy` and regenerates the protobuf code. The regeneration is not
+optional: `.pb.go` stores `go_package` inside the serialized descriptor as
+length-prefixed bytes, which no text substitution can rewrite, and the
+`proto-drift` job in CI fails if it is skipped.
+
+The JWT issuer, the compose project name and the local Docker image tag are
+deliberately left alone: they happen to read `user-management-api` but are
+names, not module paths.
 
 ---
 

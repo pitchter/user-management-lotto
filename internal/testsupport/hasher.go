@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // FakeHasher stands in for bcrypt in use-case tests.

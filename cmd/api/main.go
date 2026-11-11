@@ -23,15 +23,15 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
-	"user-management-api/internal/adapter/crypto"
-	"user-management-api/internal/adapter/grpcapi"
-	"user-management-api/internal/adapter/httpapi"
-	"user-management-api/internal/adapter/jwtauth"
-	"user-management-api/internal/adapter/mongodb"
-	"user-management-api/internal/app"
-	"user-management-api/internal/platform/config"
-	"user-management-api/internal/platform/logger"
-	"user-management-api/internal/worker"
+	"github.com/pitchter/7-solution/internal/adapter/crypto"
+	"github.com/pitchter/7-solution/internal/adapter/grpcapi"
+	"github.com/pitchter/7-solution/internal/adapter/httpapi"
+	"github.com/pitchter/7-solution/internal/adapter/jwtauth"
+	"github.com/pitchter/7-solution/internal/adapter/mongodb"
+	"github.com/pitchter/7-solution/internal/app"
+	"github.com/pitchter/7-solution/internal/platform/config"
+	"github.com/pitchter/7-solution/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/worker"
 )
 
 // Values stamped in at build time with -ldflags (see the Makefile).

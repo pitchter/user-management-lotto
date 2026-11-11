@@ -11,8 +11,8 @@ import (
 	"testing/synctest"
 	"time"
 
-	"user-management-api/internal/platform/logger"
-	"user-management-api/internal/worker"
+	"github.com/pitchter/7-solution/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/worker"
 )
 
 // stubCounter counts the calls it receives and returns whatever was configured.

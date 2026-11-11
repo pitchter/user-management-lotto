@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // FakeUserRepository is an in-memory UserRepository that reproduces the

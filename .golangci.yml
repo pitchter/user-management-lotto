@@ -48,11 +48,11 @@ linters:
           files:
             - "**/internal/domain/**"
           deny:
-            - pkg: user-management-api/internal/adapter
+            - pkg: github.com/pitchter/7-solution/internal/adapter
               desc: "the domain is the innermost layer and must not import adapters"
-            - pkg: user-management-api/internal/app
+            - pkg: github.com/pitchter/7-solution/internal/app
               desc: "the domain must not import the application layer"
-            - pkg: user-management-api/internal/platform
+            - pkg: github.com/pitchter/7-solution/internal/platform
               desc: "the domain must not import platform packages"
 
     errcheck:
@@ -107,7 +107,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - user-management-api
+        - github.com/pitchter/7-solution
 
 issues:
   max-issues-per-linter: 0

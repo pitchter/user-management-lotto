@@ -14,11 +14,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"user-management-api/internal/adapter/httpapi"
-	"user-management-api/internal/app"
-	"user-management-api/internal/domain"
-	"user-management-api/internal/platform/logger"
-	"user-management-api/internal/testsupport"
+	"github.com/pitchter/7-solution/internal/adapter/httpapi"
+	"github.com/pitchter/7-solution/internal/app"
+	"github.com/pitchter/7-solution/internal/domain"
+	"github.com/pitchter/7-solution/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/testsupport"
 )
 
 func TestMain(m *testing.M) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"user-management-api/internal/platform/logger"
+	"github.com/pitchter/7-solution/internal/platform/logger"
 )
 
 func TestNewJSONFormat(t *testing.T) {

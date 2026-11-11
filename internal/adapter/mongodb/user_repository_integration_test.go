@@ -23,8 +23,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcmongo "github.com/testcontainers/testcontainers-go/modules/mongodb"
 
-	"user-management-api/internal/adapter/mongodb"
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/adapter/mongodb"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 var fixedTime = time.Date(2026, 11, 11, 9, 0, 0, 0, time.UTC)

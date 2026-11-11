@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"user-management-api/internal/domain"
+	"github.com/pitchter/7-solution/internal/domain"
 )
 
 // FakeClock is a Clock that never advances on its own; tests call Advance.

@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"user-management-api/internal/platform/idgen"
+	"github.com/pitchter/7-solution/internal/platform/idgen"
 )
 
 func TestNewFormat(t *testing.T) {
