@@ -1,0 +1,254 @@
+# User Management API — runnable request collection
+#
+# Works with the VS Code "REST Client" extension and the JetBrains HTTP Client.
+# Run the requests top to bottom: the login requests capture the tokens into
+# variables that the later requests use.
+#
+# Start the service first:  make docker-up
+
+@host = http://localhost:8080
+@api = {{host}}/api/v1
+@contentType = application/json
+
+### Liveness probe
+GET {{host}}/healthz
+
+### Readiness probe (checks MongoDB too)
+GET {{host}}/readyz
+
+###############################################################################
+# Registration and sign-in
+###############################################################################
+
+### Register a new user — always gets the role "user"
+# @name register
+POST {{api}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Somchai Jaidee",
+  "email": "somchai@example.com",
+  "password": "secret-password"
+}
+
+### Register a second user, to have someone to collide with
+POST {{api}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Alice Smith",
+  "email": "alice@example.com",
+  "password": "secret-password"
+}
+
+### Register the same email again — 409 EMAIL_TAKEN
+POST {{api}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Somchai Jaidee",
+  "email": "somchai@example.com",
+  "password": "secret-password"
+}
+
+### Register with invalid fields — 400, every bad field reported at once
+POST {{api}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "A",
+  "email": "not-an-email",
+  "password": "short"
+}
+
+### Register with a broken body — 400 BAD_REQUEST
+POST {{api}}/auth/register
+Content-Type: {{contentType}}
+
+{"name":
+
+### Sign in as the user — captures {{login.response.body.access_token}}
+# @name login
+POST {{api}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "somchai@example.com",
+  "password": "secret-password"
+}
+
+### Sign in as the bootstrap admin
+# Requires BOOTSTRAP_ADMIN_EMAIL / BOOTSTRAP_ADMIN_PASSWORD in .env
+# @name adminLogin
+POST {{api}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "admin@example.com",
+  "password": "change-this-password"
+}
+
+### Sign in with the wrong password — 401
+POST {{api}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "somchai@example.com",
+  "password": "wrong-password"
+}
+
+### Sign in with an unknown email — 401, byte-for-byte the same answer
+POST {{api}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "nobody@example.com",
+  "password": "wrong-password"
+}
+
+###############################################################################
+# Own profile
+###############################################################################
+
+@token = {{login.response.body.access_token}}
+@adminToken = {{adminLogin.response.body.access_token}}
+@userId = {{login.response.body.user.id}}
+
+### My own profile
+GET {{api}}/users/me
+Authorization: Bearer {{token}}
+
+### No token at all — 401 with WWW-Authenticate
+GET {{api}}/users/me
+
+### Malformed Authorization header — 401
+GET {{api}}/users/me
+Authorization: {{token}}
+
+###############################################################################
+# User operations
+###############################################################################
+
+### List users as an admin
+GET {{api}}/users
+Authorization: Bearer {{adminToken}}
+
+### List the first page of two
+# @name firstPage
+GET {{api}}/users?limit=2
+Authorization: Bearer {{adminToken}}
+
+### The next page, using the cursor from the previous response
+GET {{api}}/users?limit=2&cursor={{firstPage.response.body.meta.next_cursor}}
+Authorization: Bearer {{adminToken}}
+
+### List as an ordinary user — 403
+GET {{api}}/users
+Authorization: Bearer {{token}}
+
+### limit=0 is a mistake, not "unset" — 400
+GET {{api}}/users?limit=0
+Authorization: Bearer {{adminToken}}
+
+### Create a user as an admin, choosing the role
+POST {{api}}/users
+Authorization: Bearer {{adminToken}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Second Admin",
+  "email": "admin2@example.com",
+  "password": "another-secret",
+  "role": "admin"
+}
+
+### Create with an unknown role — 400
+POST {{api}}/users
+Authorization: Bearer {{adminToken}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Nope",
+  "email": "nope@example.com",
+  "password": "secret-password",
+  "role": "superuser"
+}
+
+### Create as an ordinary user — 403
+POST {{api}}/users
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Nope",
+  "email": "nope2@example.com",
+  "password": "secret-password"
+}
+
+### Fetch my own record by id
+GET {{api}}/users/{{userId}}
+Authorization: Bearer {{token}}
+
+### Fetch an id that does not exist — 404
+GET {{api}}/users/653f1a2b3c4d5e6f70818283
+Authorization: Bearer {{adminToken}}
+
+### Fetch a malformed id — also 404, never 500
+GET {{api}}/users/not-an-id
+Authorization: Bearer {{adminToken}}
+
+### Update my own name
+PATCH {{api}}/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Somchai J. Updated"
+}
+
+### Update my own email (stored lower-cased)
+PATCH {{api}}/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "email": "NEW.Address@Example.com"
+}
+
+### Update with no fields — 400 NO_CHANGES
+PATCH {{api}}/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{}
+
+### Update to an email somebody else owns — 409
+PATCH {{api}}/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: {{contentType}}
+
+{
+  "email": "alice@example.com"
+}
+
+### Delete as an admin — 204
+DELETE {{api}}/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete again — 404
+DELETE {{api}}/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete as an ordinary user — 403
+DELETE {{api}}/users/653f1a2b3c4d5e6f70818283
+Authorization: Bearer {{token}}
+
+###############################################################################
+# Routing errors
+###############################################################################
+
+### Unknown endpoint — 404 in the usual JSON shape
+GET {{api}}/does-not-exist
+
+### Wrong method — 405
+PUT {{api}}/auth/login

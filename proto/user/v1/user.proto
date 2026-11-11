@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// go_package points inside the gRPC adapter so the code protoc generates
+// stays in the adapter layer, away from the domain and application layers.
+option go_package = "user-management-api/internal/adapter/grpcapi/pb/user/v1;userv1";
+
+// UserService exposes part of the User Management API over gRPC.
+//
+// It calls the same use cases as REST (internal/app.UserService), so both
+// transports enforce identical rules and permissions.
+//
+// Authentication: send the access token in metadata named "authorization"
+// using the "Bearer <token>" form, exactly like the HTTP header.
+service UserService {
+  // CreateUser creates a user (admin only).
+  rpc CreateUser(CreateUserRequest) returns (UserResponse);
+
+  // GetUser reads a user (the user itself, or an admin).
+  rpc GetUser(GetUserRequest) returns (UserResponse);
+}
+
+// CreateUserRequest is the data needed to create a user.
+message CreateUserRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+  // role: "admin" or "user" (empty means "user")
+  string role = 4;
+}
+
+// GetUserRequest identifies the user to read.
+message GetUserRequest {
+  string id = 1;
+}
+
+// User is the user data that may be sent out; there is deliberately no
+// password field.
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string role = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// UserResponse wraps User in one level, so response-level fields can be
+// added later without breaking existing clients.
+message UserResponse {
+  User user = 1;
+}

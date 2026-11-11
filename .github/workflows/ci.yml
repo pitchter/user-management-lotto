@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+# Cancel an older run on the same branch when a new push arrives.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.26"
+
+jobs:
+  lint:
+    name: Lint & vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Check that go.mod and go.sum are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum || {
+            echo "::error::go.mod or go.sum is out of date; run 'make tidy' and commit the result"
+            exit 1
+          }
+
+      - name: Check that the code is formatted
+        run: |
+          unformatted=$(gofmt -l . | grep -v '\.pb\.go$' || true)
+          if [ -n "$unformatted" ]; then
+            echo "::error::these files are not gofmt'd:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.5.0
+          args: --timeout=5m
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      # -race catches data races between the background worker and concurrent handlers.
+      - name: go test -race
+        run: go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
+
+      - name: Coverage summary
+        run: |
+          go tool cover -func=coverage.out | tail -1
+          go tool cover -func=coverage.out > coverage.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            coverage.out
+            coverage.txt
+
+  integration:
+    name: Integration tests (real MongoDB)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      # testcontainers starts MongoDB itself; GitHub runners already have Docker.
+      - name: go test -tags=integration
+        run: go test ./... -tags=integration -run Integration -count=1 -v
+
+  proto:
+    name: Check the generated code matches the .proto file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install protoc and the plugins
+        run: |
+          sudo apt-get update && sudo apt-get install -y protobuf-compiler
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      # Catches a .proto change where the generated code was not regenerated.
+      - name: Generate and compare with what is committed
+        run: |
+          make proto
+          git diff --exit-code -- internal/adapter/grpcapi/pb || {
+            echo "::error::the code generated from the proto differs; run 'make proto' and commit the result"
+            exit 1
+          }
+
+  docker:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: false
+          load: true
+          tags: user-management-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=ci-${{ github.sha }}
+            COMMIT=${{ github.sha }}
+
+      # The image is distroless and has no shell, so it is checked through the
+      # binary's own healthcheck mode (which must fail while no server runs).
+      - name: Check that the image runs
+        run: |
+          docker run --rm user-management-api:ci healthcheck && {
+            echo "::error::healthcheck must not pass while no server is running"
+            exit 1
+          } || echo "the image runs and its healthcheck behaves correctly"

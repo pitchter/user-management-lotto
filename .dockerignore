@@ -1,0 +1,25 @@
+# Keep unnecessary files out of the build context: faster builds, and no
+# chance of a secret reaching the image.
+.git
+.github
+.gitignore
+.dockerignore
+
+# Secrets
+.env
+.env.local
+*.pem
+
+# Build and test output
+bin/
+dist/
+coverage.out
+coverage.html
+
+# Documentation and editor files
+docs/
+*.md
+!README.md
+.idea/
+.vscode/
+.DS_Store

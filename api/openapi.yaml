@@ -1,0 +1,661 @@
+openapi: 3.1.0
+
+info:
+  title: User Management API
+  version: 1.0.0
+  description: |
+    User management with JWT authentication and role-based access control.
+
+    All endpoints under `/api/v1/users` require a bearer token obtained from
+    `POST /api/v1/auth/login`. Roles are `admin` and `user`: an admin manages
+    every user, a user manages only its own record.
+
+    Worked examples for every endpoint, including the error cases, are in
+    `docs/api-examples.md`; the token format is documented in
+    `docs/jwt-guide.md`.
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: auth
+    description: Registration and sign-in
+  - name: users
+    description: User operations
+  - name: health
+    description: Liveness and readiness probes
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [auth]
+      summary: Register a new user
+      description: |
+        Public sign-up. The created user always has the role `user`; there is
+        no way to request another role here.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: Path of the created user
+              schema: { type: string }
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/EmailTaken'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Exchange credentials for an access token
+      description: |
+        A wrong password and an unknown email produce the exact same response,
+        and take about the same time, so that registered addresses cannot be
+        discovered.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated
+          headers:
+            Cache-Control:
+              description: Always `no-store`; a response holding a token must not be cached.
+              schema: { type: string }
+            X-Request-ID:
+              $ref: '#/components/headers/XRequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/InvalidCredentials'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/users:
+    get:
+      tags: [users]
+      summary: List users (admin only)
+      description: |
+        Keyset pagination: pass `meta.next_cursor` from one response as the
+        `cursor` of the next request. A `next_cursor` of `null` means there is
+        nothing more.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Page size. Defaults to 20, capped at 100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          description: The `next_cursor` of the previous page.
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{24}$'
+      responses:
+        '200':
+          description: A page of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [users]
+      summary: Create a user (admin only)
+      description: The only way to create a user with the `admin` role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: Path of the created user
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/EmailTaken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/users/me:
+    get:
+      tags: [users]
+      summary: The token holder's own profile
+      responses:
+        '200':
+          description: The caller's user record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The user's id (24-character hex ObjectID).
+        schema:
+          type: string
+          pattern: '^[0-9a-f]{24}$'
+
+    get:
+      tags: [users]
+      summary: Fetch a user (self or admin)
+      description: |
+        An ordinary user asking for somebody else's id receives 403 whether or
+        not that id exists, so the status code cannot be used to enumerate
+        accounts.
+      responses:
+        '200':
+          description: The user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    patch:
+      tags: [users]
+      summary: Update a user's name or email (self or admin)
+      description: |
+        Send `name`, `email` or both. An omitted field is left alone; sending
+        neither is an error. Emails are stored lower-cased.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: The updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Validation failed, or no field was sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                noChanges:
+                  summary: No field to change
+                  value:
+                    error:
+                      code: NO_CHANGES
+                      message: send at least one field to change (name or email)
+                    request_id: 18751f51a49d9210b1e0459a28102cf8
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/EmailTaken'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [users]
+      summary: Delete a user (admin only)
+      description: |
+        An admin cannot delete their own account; doing so could leave the
+        system with no administrator.
+      responses:
+        '204':
+          description: Deleted; no body.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /healthz:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      description: |
+        Reports that the process is running. It deliberately does not touch
+        MongoDB, so a brief database outage cannot cause pods to be restarted.
+      security: []
+      responses:
+        '200':
+          description: The process is up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+  /readyz:
+    get:
+      tags: [health]
+      summary: Readiness probe
+      description: Reports whether the service can serve traffic, MongoDB included.
+      security: []
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: ok
+                mongo: up
+                version: 1.0.0
+        '503':
+          description: MongoDB is unreachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: unavailable
+                mongo: down
+                version: 1.0.0
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        An access token from `POST /api/v1/auth/login`, signed with HS256.
+        Send it as `Authorization: Bearer <token>`. Over gRPC the same token
+        goes in `authorization` metadata.
+
+  headers:
+    XRequestID:
+      description: Correlation id, also present on every log line for this request.
+      schema: { type: string }
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Somchai Jaidee
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          example: somchai@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          description: At most 72 bytes, which is all bcrypt reads.
+          example: secret-password
+      additionalProperties: false
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: somchai@example.com
+        password:
+          type: string
+          example: secret-password
+      additionalProperties: false
+
+    CreateUserRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Second Admin
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          example: admin2@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          example: another-secret
+        role:
+          type: string
+          enum: [admin, user]
+          default: user
+          example: admin
+      additionalProperties: false
+
+    UpdateUserRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: Somchai J. Updated
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          example: new.address@example.com
+      additionalProperties: false
+
+    User:
+      type: object
+      required: [id, name, email, role, created_at, updated_at]
+      description: A user as returned by the API. No password field exists on this type.
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-f]{24}$'
+          example: 653f1a2b3c4d5e6f70818283
+        name:
+          type: string
+          example: Somchai Jaidee
+        email:
+          type: string
+          format: email
+          example: somchai@example.com
+        role:
+          type: string
+          enum: [admin, user]
+          example: user
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in, expires_at, user]
+      properties:
+        access_token:
+          type: string
+          description: A JWT signed with HS256.
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Remaining lifetime in seconds.
+          example: 900
+        expires_at:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+
+    UserListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        meta:
+          type: object
+          required: [count, limit, next_cursor, total]
+          properties:
+            count:
+              type: integer
+              description: Records on this page.
+            limit:
+              type: integer
+              description: Page size in effect.
+            next_cursor:
+              type: [string, 'null']
+              description: Pass as `cursor` for the next page; null when there is no more.
+            total:
+              type: integer
+              format: int64
+              description: Total users in the system.
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        mongo:
+          type: string
+          enum: [up, down]
+        version:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      description: The single error shape used by every endpoint.
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: |
+                Stable, machine-readable. Match on this, never on `message`.
+              enum:
+                - VALIDATION_ERROR
+                - NO_CHANGES
+                - BAD_REQUEST
+                - UNAUTHENTICATED
+                - FORBIDDEN
+                - NOT_FOUND
+                - METHOD_NOT_ALLOWED
+                - EMAIL_TAKEN
+                - PAYLOAD_TOO_LARGE
+                - INTERNAL_ERROR
+            message:
+              type: string
+            details:
+              type: array
+              description: Present when specific fields are at fault.
+              items:
+                type: object
+                required: [field, issue]
+                properties:
+                  field:
+                    type: string
+                    example: email
+                  issue:
+                    type: string
+                    example: must be a valid email address
+        request_id:
+          type: string
+
+  responses:
+    ValidationError:
+      description: The request body or query is invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: the submitted data is invalid
+              details:
+                - field: email
+                  issue: must be a valid email address
+                - field: password
+                  issue: must be at least 8 characters long
+            request_id: 4747d03f606c8a682f357ad28e0088e8
+
+    Unauthenticated:
+      description: No usable access token was supplied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: UNAUTHENTICATED
+              message: 'an Authorization: Bearer <token> header is required'
+            request_id: 4696dd9f51d56a516338764ea56456b2
+
+    InvalidCredentials:
+      description: |
+        The email or the password is wrong. Identical for both cases by design.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: UNAUTHENTICATED
+              message: invalid email or password
+            request_id: 686bea12a3035ad7cb8dc3a1468c394f
+
+    Forbidden:
+      description: Authenticated, but not allowed to do this
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: FORBIDDEN
+              message: you are not allowed to perform this action
+            request_id: 38fb2a4f21351cca75f2843ff219545e
+
+    NotFound:
+      description: No such user
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: NOT_FOUND
+              message: the requested user does not exist
+            request_id: 213c93db33510e529dbb8a4be23c6ed2
+
+    EmailTaken:
+      description: That email is already registered
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: EMAIL_TAKEN
+              message: that email is already registered
+            request_id: a76ea1be8e6303fcd8460640f1cef94b
+
+    PayloadTooLarge:
+      description: The request body exceeds HTTP_MAX_BODY_BYTES
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: PAYLOAD_TOO_LARGE
+              message: the request body exceeds 1048576 bytes
+            request_id: 7c2b1d9e4a8f60152c3b7e9d0a1f4b63
+
+    InternalError:
+      description: |
+        Something failed on the server. The message is intentionally generic;
+        the detail is in the server log under this `request_id`.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              code: INTERNAL_ERROR
+              message: an internal error occurred
+            request_id: 5a9e3c7b1f204d68a3c5e7f90b2d4a16
+
+security:
+  - bearerAuth: []

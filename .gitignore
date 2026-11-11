@@ -1,0 +1,19 @@
+# Binaries
+/bin/
+/dist/
+*.exe
+
+# Env / secrets
+.env
+.env.local
+*.pem
+
+# Test & coverage output
+coverage.out
+coverage.html
+*.test
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
